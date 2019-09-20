@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="css/bootstrap.min.css">
+<script src="js/angular.js"></script>
+<script src="js/ui-bootstrap-tpls-1.3.2.js"></script>
+</head>
+<body>
+	<div id="div" ng-app="myApp" ng-controller="userCtrl"
+		style="margin: 100px 30px">
+		<div class="panel panel-primary">
+			<div class="panel-body">
+				<div class="page-header">
+					<h3>系统测试</h3>
+				</div>
+				<div class="row" style="margin: 10px 0">
+					<button type="button" class="col-xs-4 btn btn-primary"
+						ng-click="uploadTest()">上传系统</button>
+						<div class="col-xs-4"></div>
+					<button type="button" class="col-xs-4 btn btn-primary"
+						ng-click="uploadExcelTest()">excel文件测试系统</button>
+				</div>
+				<div class="row list-group text-center" style="margin: 10px 0">
+					<p class="list-group-item text-center disabled btn">选择下面已有系统</p>
+				</div>
+				<div class="row" style="margin: 10px 0">
+					<div class="col-xs-4" style="padding-left: 0">
+						<select class="form-control" ng-model="system_ID"
+							ng-init="system_ID='-1'" ng-change="change()">
+							<option value="-1">选择系统</option>
+							<option ng-repeat="name in names" value="{{name}}">{{name}}</option>
+						</select>
+					</div>
+					<div class="col-xs-4" style="padding-left: 0">
+						<select class="form-control" ng-model="myid" ng-init="myid='-1'"
+							ng-change="change()">
+							<option value="-1">选择求解算法</option>
+							<option value="0">RIA</option>
+							<option value="1">GA</option>
+							<option value="2">GA’</option>
+							<option value="3">GA’’</option>
+						</select>
+					</div>
+					<!-- <div class="col-xs-3" style="padding-left: 0">
+						<select class="form-control" ng-model="cplx" ng-init="cplx='-1'"
+							ng-change="change()">
+							<option value="-1">选择测试桩复杂度评估的方法</option>
+							<option value="0">Briand等人的加权方法(即WA =WM=0.5)</option>
+							<option value="1">熵权法</option>
+							<option value="3">MLFCITO</option>
+						</select>
+					</div> -->
+					<div class="col-xs-4" style="padding-left: 0">
+						<button type="button" class="btn btn-primary"
+							ng-click="startTest()">开始测试</button>
+					</div>
+				</div>
+				<div class="row" style="margin: 10px 0">
+					<p class="text-danger" style="font-size: 30px;">算法说明：</p>
+					<p class="text-primary" style="margin: 0 150px; font-size: 20px;">RIA：随机交互算法</p>
+					<p class="text-primary" style="margin: 0 150px; font-size: 20px;">GA：原遗传算法(使用Briand等人的加权方法确定WA
+						和 WM (即WA = WM= 0.5)， Briand等人的适应度函数)</p>
+					<p class="text-primary" style="margin: 0 150px; font-size: 20px;">GA’：熵权遗传算法(使用熵权法确定WA
+						和 WM，但仍使用Briand等适应度函数)</p>
+					<p class="text-primary" style="margin: 0 150px; font-size: 20px;">GA’’：新遗传算法(使用熵权法确定WA
+						和 WM，使用新适应度函数)</p>
+				</div>
+			</div>
+		</div>
+		<script type="text/ng-template" id="myupload.html">
+            <div class="modal-header">
+                <h3 class="modal-title">文件上传（zip压缩包）</h3>
+            </div>
+            <div class="modal-body row">
+				<div class="col-xs-3"></div>
+				<div class="form-group col-xs-6">
+					<input type="file" id="inputfile" ng-model="file"/>
+					<div class="alert alert-danger hide" id="adderrmsg">{{adderrmsg}}</div>
+				</div>   
+				<div class="col-xs-3"></div>             	
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" type="button" ng-click="ok()">OK</button>
+                <button class="btn btn-warning" type="button" ng-click="cancel()">Cancel</button>
+            </div>
+        </script>
+        <script type="text/ng-template" id="myExcelupload.html">
+            <div class="modal-header">
+                <h3 class="modal-title">文件上传（excel文件）</h3>
+            </div>
+            <div class="modal-body row">
+				<div class="col-xs-1"></div>
+				<div class="form-group col-xs-6">
+					<input type="file" id="inputfile" ng-model="file"/>
+					<div class="alert alert-danger hide" id="adderrmsg">{{adderrmsg}}</div>
+				</div>   
+				<div class="col-xs-4">
+					<select class="form-control" ng-model="myid" ng-init="myid='-1'"
+							ng-change="change()">
+							<option value="-1">选择求解算法</option>
+							<option value="0">RIA</option>
+							<option value="1">GA</option>
+							<option value="2">GA’</option>
+							<option value="3">GA’’</option>
+					</select>
+				</div>             	
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" type="button" ng-click="ok()">OK</button>
+                <button class="btn btn-warning" type="button" ng-click="cancel()">Cancel</button>
+            </div>
+        </script>
+		<script type="text/ng-template" id="myProcess.html">
+            <div class="modal-header">
+                <h3 class="modal-title">正在测试。。。</h3>
+            </div>
+            <div class="modal-body">
+				<div class="progress progress-striped">
+						<div class="progress-bar progress-bar-success"
+									ng-style="{width: value + '%'}">
+						<div>{{value}}%</div>
+					</div>
+				</div>
+            </div>
+        </script>
+        <script type="text/ng-template" id="myExcelProcess.html">
+            <div class="modal-header">
+                <h3 class="modal-title">正在测试。。。</h3>
+            </div>
+            <div class="modal-body">
+				<div class="progress progress-striped">
+						<div class="progress-bar progress-bar-success"
+									ng-style="{width: value + '%'}">
+						<div>{{value}}%</div>
+					</div>
+				</div>
+            </div>
+        </script>
+	</div>
+	<script>
+		var app = angular.module('myApp', [ 'ui.bootstrap' ]);
+		app.controller('userCtrl', [ '$scope', '$http', '$uibModal',
+				function($scope, $http, $uibModal) {
+					$http({
+						method : 'GET',
+						url : '/test1/getNames'
+					}).then(function(response) {
+						$scope.names = response.data;
+					});
+					$scope.change = function() {
+						console.log("选择的系统::::》" + $scope.system_ID);
+						console.log("选择的算法::::》" + $scope.myid);
+						//console.log("选择的Cplx::::》" + $scope.cplx);
+					}
+					//上传
+					$scope.uploadTest = function() {
+
+						var modalInstance = $uibModal.open({
+							templateUrl : 'myupload.html',
+							controller : 'uploadController',
+							backdrop : "static"
+						});
+					};
+					$scope.uploadExcelTest = function() {
+						var modalInstance = $uibModal.open({
+							templateUrl : 'myExcelupload.html',
+							controller : 'uploadExcelController',
+							backdrop : "static"
+						});
+					};
+					$scope.startTest = function() {
+						if ($scope.system_ID == -1 || $scope.myid == -1) {
+							alert("请正确选择");
+						} else {
+							var items = [ $scope.system_ID, $scope.myid ];
+							var modalInstance = $uibModal.open({
+								templateUrl : 'myProcess.html',
+								controller : 'myProcessController',
+								backdrop : "static",
+								resolve : {
+									items1 : function() {
+										return items;
+									}
+								}
+							});
+						}
+					}
+				} ]);
+		app.controller('uploadController', function($scope, $uibModalInstance,
+				$http) {
+			//上传操作
+			$scope.ok = function() {
+				if (document.querySelector("#inputfile").files.length == 0) {
+					document.getElementById("adderrmsg").setAttribute("class",
+							"alert-danger");
+					$scope.adderrmsg = "请选择文件";
+				} else {
+					var formData = new FormData();
+					var file = document.getElementById("inputfile").files[0];
+					if (file.name) {
+						var fileName = file.name.substring(file.name
+								.lastIndexOf(".") + 1);
+						if (fileName == "zip") {
+							formData.append('file', file);
+							$http({
+								method : 'POST',
+								url : '/test1/uploadzipFile',
+								data : formData,
+								headers : {
+									'Content-Type' : undefined
+								}
+							}).success(function(data) {
+								console.log('upload success');
+								$uibModalInstance.close();
+							}).error(function(data) {
+								console.log('upload fail');
+							});
+						} else {
+							$scope.adderrmsg = "请选择Zip文件";
+						}
+					}
+				}
+				;
+			};
+			$scope.cancel = function() {
+				$uibModalInstance.close();
+			};
+		});
+		app.controller('uploadExcelController', function($scope, $uibModalInstance,
+				$http,$uibModal) {
+			//上传操作
+			$scope.ok = function() {
+				if (document.querySelector("#inputfile").files.length == 0|| $scope.myid == -1) {
+					document.getElementById("adderrmsg").setAttribute("class",
+							"alert-danger");
+					$scope.adderrmsg = "请选择文件和方法";
+				} else {
+					var formData = new FormData();
+					var file = document.getElementById("inputfile").files[0];
+					if (file.name) {
+						var fileName = file.name.substring(file.name
+								.lastIndexOf(".") + 1);
+						var system=file.name.substring(0,file.name
+								.lastIndexOf(".") );
+						console.log("文件名：：：" + system);
+						console.log("算法：：：" + $scope.myid);
+						if (fileName == "xls" || fileName == "xlsx") {
+								var modalInstance = $uibModal.open({
+									templateUrl : 'myExcelProcess.html',
+									controller : 'myExcelProcessController',
+									backdrop : "static",
+								});
+							formData.append('file', file);
+							$http({
+								method : 'POST',
+								url : '/test1/uploadExcelFile/'+$scope.myid,
+								data : formData,
+								headers : {
+									'Content-Type' : undefined
+								}
+							}).success(function(data) {
+								window.location.href = "result/result.html?system_ID="
+									+ system + "&myid=" + $scope.myid;
+								console.log('upload success');
+								$uibModalInstance.close();
+							}).error(function(data) {
+								console.log('upload fail');
+							});
+						} else {
+							$scope.adderrmsg = "请选择excel文件";
+						}
+					}
+				}
+				;
+			};
+			$scope.cancel = function() {
+				$uibModalInstance.close();
+			};
+		});
+		app.controller('myProcessController', function($scope, $interval,
+				$http, $location, items1) {
+			//测试操作
+			var value = $scope.value = 0;
+			var system_ID = items1[0];
+			var myid = items1[1];
+
+			console.log("选择的系统::::》" + items1[0]);
+			console.log("选择的算法::::》" + items1[1]);
+
+			console.log("选择的进度::::》" + value);
+			var stop = $interval(function() {
+				value = value + 1;
+				$scope.value = value;
+				if (value == 96) {
+					$interval.cancel(stop);
+				}
+			}, 100);
+			$http({
+				method : 'GET',
+				url : '/test1/runAlgorithm/' + system_ID + '/' + myid
+			}).then(
+					function(response) {
+						window.location.href = "result/result.html?system_ID="
+								+ system_ID + "&myid=" + myid;
+					});
+		});
+		
+		app.controller('myExcelProcessController', function($scope, $interval,
+				$http, $location) {
+			var value = $scope.value = 0;
+			var stop = $interval(function() {
+				value = value + 1;
+				$scope.value = value;
+				if (value == 100) {
+					$interval.cancel(stop);
+				}
+			}, 100);
+		});
+	</script>
+
+</body>
+</html>

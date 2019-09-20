@@ -1,0 +1,159 @@
+/*
+ * JBoss, the OpenSource J2EE webOS
+ *
+ * Distributable under LGPL license.
+ * See terms of license at gnu.org.
+ */
+package org.jboss.management.j2ee;
+
+import javax.management.MalformedObjectNameException;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import javax.management.Notification;
+
+import org.jboss.logging.Logger;
+
+/**
+ * Root class of the JBoss JSR-77 implementation of
+ * {@link javax.management.j2ee.JCAManagedConnectionFactory JCAManagedConnectionFactory}.
+ *
+ * @author  <a href="mailto:mclaugs@comcast.net">Scott McLaughlin</a>.
+ * @version $Revision: 1.3.2.3 $
+ *   
+ * <p><b>Revisions:</b>
+ *
+ * <p><b>20020303 Scott McLaughlin:</b>
+ * <ul>
+ * <li> Finishing first real implementation
+ * </ul>
+ *
+ * @jmx:mbean extends="org.jboss.management.j2ee.J2EEManagedObjectMBean"
+ **/
+public class JCAManagedConnectionFactory
+   extends J2EEManagedObject
+   implements JCAManagedConnectionFactoryMBean
+{
+   // Constants -----------------------------------------------------
+   
+   public static final String J2EE_TYPE = "JCAManagedConnectionFactory";
+   
+   // Attributes ----------------------------------------------------
+   
+   // Static --------------------------------------------------------
+   
+   private static final String[] sTypes = new String[] {
+                                             "j2ee.object.created",
+                                             "j2ee.object.deleted",
+                                             "state.stopped",
+                                             "state.stopping",
+                                             "state.starting",
+                                             "state.running",
+                                             "state.failed"
+                                          };
+                                          
+   public static ObjectName create( MBeanServer pServer, String pName, ObjectName pParent ) {
+      Logger lLog = Logger.getLogger( JCAManagedConnectionFactory.class );
+      if( !J2EEServer.sIsActive ) {
+         return null;
+      }
+      try {
+         // Now create the JCAManagedConnectionFactory Representant
+         return pServer.createMBean(
+            "org.jboss.management.j2ee.JCAManagedConnectionFactory",
+            null,
+            new Object[] {
+               pName,
+               pParent
+            },
+            new String[] {
+               String.class.getName(),
+               ObjectName.class.getName()
+            }
+         ).getObjectName();
+      }
+      catch( Exception e ) {
+//AS         lLog.error( "Could not create JSR-77 JCAManagedConnectionFactory: " + pName, e );
+         return null;
+      }
+   }
+   
+   public static void destroy( MBeanServer pServer, String pName ) {
+      Logger lLog = Logger.getLogger( JCAManagedConnectionFactory.class );
+      if( !J2EEServer.sIsActive ) {
+         return;
+      }
+      try {
+         J2EEManagedObject.removeObject(
+            pServer,
+            J2EEManagedObject.getDomainName() + ":" +
+               J2EEManagedObject.TYPE + "=" + JCAManagedConnectionFactory.J2EE_TYPE + "," +
+               "name=" + pName + "," +
+               "*"
+         );
+      }
+      catch( Exception e ) {
+//AS         lLog.error( "Could not destroy JSR-77 JCAManagedConnectionFactory: " + pName, e );
+      }
+   }
+   
+   // Constructors --------------------------------------------------
+   
+   /**
+   * @param pName Name of the JCAManagedConnectionFactory 
+   *
+   * @throws InvalidParameterException If list of nodes or ports was null or empty
+   **/
+   public JCAManagedConnectionFactory(String pName, ObjectName pServer) throws MalformedObjectNameException, InvalidParentException
+   {
+      super( J2EE_TYPE, pName, pServer );
+   }
+   
+   // Public --------------------------------------------------------
+   
+    // org.jboss.ServiceMBean overrides ------------------------------------
+   
+   public void postCreation() {
+      sendNotification(
+         new Notification(
+            StateManagement.sTypes[ 0 ],
+            getName(),
+            1,
+            System.currentTimeMillis(),
+            "Managed Connection Factory created"
+         )
+      );
+   }
+   
+   public void preDestruction() {
+      Logger lLog = getLog();
+      if( lLog.isInfoEnabled() ) {
+         lLog.info( "JCAManagedConnectionFactory.preDeregister(): " + getName() );
+      }
+      sendNotification(
+         new Notification(
+            StateManagement.sTypes[ 1 ],
+            getName(),
+            1,
+            System.currentTimeMillis(),
+            "Managed Connection Factory deleted"
+         )
+      );
+   }
+   // org.jboss.ServiceMBean overrides ------------------------------------
+   
+   // java.lang.Object overrides ------------------------------------
+   
+   public String toString() {
+      return "JCAManagedConnectionFactory { " + super.toString() + " } [ " +
+         " ]";
+   }
+   
+   // Package protected ---------------------------------------------
+   
+   // Protected -----------------------------------------------------
+   
+   // Private -------------------------------------------------------
+   
+   // Inner classes -------------------------------------------------
+   
+}

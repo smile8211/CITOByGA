@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="css/bootstrap.min.css">
+<link rel="stylesheet" href="css/diagram.css">
+<link rel="stylesheet" href="css/joint.css">
+<script src="js/jquery.js"></script>
+<script src="js/d3.min.js"></script>
+<script src="js/dagre-d3.js"></script>
+<script src="js/angular.js"></script>
+<script src="js/lodash.js"></script>
+<script src="js/backbone.js"></script>
+<script src="js/joint.js"></script>
+<script src="js/jointMyUML.js"></script>
+</head>
+<body>
+	<div id="div" ng-app="myApp1" ng-controller="DiagramController"
+		style="margin: 30px 30px">
+		<ul id="myTab" class="nav nav-tabs">
+			<li ng-class="{ 'active' : current == 1 }"><a
+				ng-click="setCurrent(1)" data-toggle="tab">类间关系图</a></li>
+			<li ng-class="{ 'active' : current == 4 }"><a
+				ng-click="setCurrent(4)" data-toggle="tab">类间属性和方法依赖值表</a></li>
+			<!-- 			<li ng-class="{ 'active' : current == 5 }"><a
+				ng-click="setCurrent(5)" data-toggle="tab">类间方法依赖关系表</a></li> -->
+			<li ng-class="{ 'active' : current == 2 }"><a
+				ng-click="setCurrent(2)" data-toggle="tab">{{method}}方法测试结果</a></li>
+			<!-- 			<li ng-class="{ 'active' : current == 3 }"><a
+				ng-click="setCurrent(3)" data-toggle="tab">复杂度及测试桩</a></li> -->
+		</ul>
+		<div ng-show="current == 1">
+			<div class="panel panel-info ">
+				<div class="panel-heading">
+					<h3>{{name}}系统的类间关系图</h3>
+				</div>
+				<div class="panel-body">
+					<div class="row" ng-show="uml == 1">
+						<div class="col-xs-10 col-sm-10 col-md-10"></div>
+						<button style="margin:5px 5px" type="button" class="btn btn-primary" ng-click="toUML()">查看UML图</button>
+					</div>
+					<div class="row">
+						<div class="col-xs-1 col-sm-1 col-md-1"></div>
+						<svg id="svgCanvas" class="col-xs-10 col-sm-10 col-md-10"
+							height="600"></svg>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="panel panel-warning " ng-show="current == 2">
+			<div class="panel-heading">
+				<h3>{{name}}系统的最优类测试序列以及测试桩信息</h3>
+			</div>
+			<div class="panel-body">
+				<div class="table-responsive col-md-4">
+					<h4>最优类测试序列</h4>
+					<!-- Table -->
+					<table
+						class="table table-striped table-hover table-bordered table-responsive">
+						<thead>
+							<tr>
+								<th>类编号</th>
+								<th>类名</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat=" i in result.order ">
+								<td ng-repeat="(key,value) in i ">{{ key }}</td>
+								<td ng-repeat="(key,value) in i ">{{ value }}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="table-responsive col-md-8">
+					<h4>测试桩信息</h4>
+					<!-- Table -->
+					<table
+						class="table table-striped table-hover table-bordered table-responsive">
+						<thead>
+							<tr>
+								<th colspan="2">复杂度和测试桩参数</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>总测试桩复杂度(原)</td>
+								<td>{{ result.fit }}</td>
+							</tr>
+							<tr>
+								<td>总测试桩复杂度(熵)</td>
+								<td>{{ result.fitByEntropy }}</td>
+							</tr>
+							<tr>
+								<td>属性测试桩复杂度</td>
+								<td>{{ result.attrCplx }}</td>
+							</tr>
+							<tr>
+								<td>方法测试桩复杂度</td>
+								<td>{{ result.methodCplx }}</td>
+							</tr>
+							<tr>
+								<td>测试桩数目</td>
+								<td>{{ result.stubs }}</td>
+							</tr>
+							<tr ng-repeat=" i in result.listOfStubs  ">
+								<td ng-if="$index ==0" rowspan="{{ result.stubs }}">测试桩列表</td>
+								<td>{{ i }}</td>
+							</tr>
+							<tr>
+								<td colspan="2">{{ result.allTime }}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		<!-- <div class="panel panel-success" ng-show="current == 3">
+			<div class="panel-heading">
+				<h3>{{name}}系统测试序列的复杂度及测试桩</h3>
+			</div>
+			<div class="panel-body">
+				<div class="panel-body">
+					<div>
+						Table
+						<table
+							class="table table-striped table-hover table-bordered table-responsive">
+							<thead>
+								<tr>
+									<th colspan="2">复杂度和测试桩参数</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td>总体测试桩复杂度</td>
+									<td>{{ result.fit }}</td>
+								</tr>
+								<tr>
+									<td>属性测试桩复杂度</td>
+									<td>{{ result.attrCplx }}</td>
+								</tr>
+								<tr>
+									<td>方法测试桩复杂度</td>
+									<td>{{ result.methodCplx }}</td>
+								</tr>
+								<tr>
+									<td>传递方法测试桩复杂度</td>
+									<td>{{ result.transCplx }}</td>
+								</tr>
+								<tr>
+									<td>测试桩数目</td>
+									<td>{{ result.stubs }}</td>
+								</tr>
+								<tr ng-repeat=" i in result.listOfStubs  ">
+									<td ng-if="$index ==0" rowspan="{{ result.stubs }}">测试桩列表</td>
+									<td>{{ i }}</td>
+								</tr>
+								<tr>
+									<td colspan="2">{{ result.allTime }}</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div> -->
+		<div class="panel panel-info " ng-show="current == 4">
+			<div class="panel-heading">
+				<h3>{{name}}系统的类间属性和方法依赖关系值表</h3>
+			</div>
+			<div class="panel-body">
+				<div class="row">
+					<div class="table-responsive col-md-4">
+						<!-- Table -->
+						<table
+							class="table table-striped table-hover table-bordered table-responsive text-nowrap">
+							<tbody>
+								<tr ng-repeat=" i in result.classNames">
+									<td>{{$index}}</td>
+									<td>{{ i }}</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<div class="table-responsive col-md-8">
+						<h4>类间属性依赖值表</h4>
+						<div class="table-responsive">
+							<!-- Table -->
+							<table
+								class="table table-striped table-hover table-bordered table-responsive text-nowrap">
+								<tbody>
+									<tr ng-repeat=" i in result.listOfA">
+										<td ng-repeat="b in i track by $index">{{ b }}</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+						<h4>类间方法依赖值表</h4>
+						<div class="table-responsive">
+							<!-- Table -->
+							<table
+								class="table table-striped table-hover table-bordered table-responsive text-nowrap">
+								<tbody>
+									<tr ng-repeat=" i in result.listOfM">
+										<td ng-repeat="b in i track by $index">{{ b }}</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- <!-- 		<div class="panel panel-info " ng-show="current == 5">
+			<div class="panel-heading">
+				<h3>{{name}}系统的类间方法依赖关系表</h3>
+			</div>
+			<div class="panel-body">
+				<div class="row">
+					<div class="table-responsive col-md-4">
+						Table
+						<table
+							class="table table-striped table-hover table-bordered table-responsive text-nowrap">
+							<tbody>
+								<tr ng-repeat=" i in result.classNames">
+									<td>{{$index}}</td>
+									<td>{{ i }}</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<div class="table-responsive col-md-8">
+						Table
+						<table
+							class="table table-striped table-hover table-bordered table-responsive text-nowrap"
+							style="table-layout: fixed;">
+							<tbody>
+								<tr ng-repeat=" i in result.listOfM">
+									<td ng-repeat="b in i track by $index">{{ b }}</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div> -->
+	</div>
+	<script>
+		var app = angular.module('myApp1',[]).config(['$locationProvider', function($locationProvider) {
+			//$locationProvider.html5Mode(true);
+			$locationProvider.html5Mode({
+		          enabled: true,
+		          requireBase: false
+		        });
+			}]);
+		
+	    app.controller('DiagramController', ['$scope',  '$http', '$location',function ($scope, $http,$location) {
+	    	var name=$location.search().system_ID;
+	    	var myid=$location.search().myid;
+	    	//var cplx=$location.search().cplx;
+	    	$scope.name=name;
+	    	var myid=$location.search().myid;
+	    	var method="*****";
+	    	if(myid==0){
+	    		method="RIA(随机交互算法)";
+	    	}else if(myid==1){
+	    		method="GA(原始遗传算法)";
+	    	}else if(myid==2){
+	    		method="GA’(熵权法原始遗产算法)";
+	    	}else if(myid==3){
+	    		method="GA’’(新遗传算法)";
+	    	}
+	    	$scope.method=method;
+	    	//console.log($location.search());
+	    	//console.log(name);
+	    	$scope.current = 1; 
+	    	$scope.uml=0;
+            $scope.setCurrent = function (param) {
+                    $scope.current = param;
+                }
+            $scope.toUML=function () {
+            	window.location.href = "resultUML.html?system_ID="
+					+ name + "&myid=" + myid;
+            }
+	    	$http({
+	            method: 'GET',
+	            url: '/test1/getSetOfRelation/'+name+'/'+myid
+	        }).then(function (response) {
+	        	var listOfR = response.data.setOfRelation;
+	        	var classNames = response.data.classNames;
+	        	$scope.result=response.data;
+	          	//console.log(response.data);
+	            // 将根据方法依赖生成流程图
+	        	drawDiagram(classNames,listOfR);
+	            if(response.data.listClassInformation.length>0){
+	            	//console.log(response.data.listClassInformation);
+	            	$scope.uml=1;
+	            }
+	            
+	        });
+	    }]);
+	function drawDiagram(classNames,listOfR) {
+    	// 先将每个节点放入state
+    	var state=new Array();
+		for (var i=0;i<classNames.length;i++){
+    		var one=new Object();
+    		one.id=i;
+    		one.label=classNames[i];
+    		one.class='type-suss';
+    		state.push(one);
+    	}
+    	//console.log(state);
+    	var edg=new Array();
+    	for(var str of listOfR){
+    		//console.log("str字符串"+str);
+    		var arr=str.split("-->");
+    		//console.log("分割后"+arr);
+        	var one=new Object();
+        	one.start=arr[0];
+        	one.end=arr[1];
+        	one.option={};
+        	edg.push(one);
+        	//console.log("one"+one);
+    	}
+		var g = new dagreD3.graphlib.Graph()
+	     .setGraph({})
+	     .setDefaultEdgeLabel(function () { return {}; });
+
+		for (let i in state) { // 画点
+			let el = state[i]
+			g.setNode(i, {
+				id: i,
+				label: el.label,
+				class: el.class
+			});
+		}
+		for (let i in edg) { // 画连线
+			let el = edg[i]
+			g.setEdge(el.start, el.end, {
+				style: "stroke: #0fb2cc; fill: none;",
+				arrowheadStyle: "fill: #0fb2cc;stroke: #0fb2cc;",
+				arrowhead: 'vee'
+			});
+		}
+		g.nodes().forEach((v) => { // 画圆角
+			var node = g.node(v);
+			// Round the corners of the nodes
+			node.rx = node.ry = 5;
+		});
+		var render = new dagreD3.render();
+		var svg = d3.select("#svgCanvas"); // 声明节点
+		svg.select("g").remove(); // 删除以前的节点，清空画面
+		var svgGroup = svg.append("g");
+		var inner = svg.select("g");
+		var zoom = d3.zoom().on("zoom", function () { // 添加鼠标滚轮放大缩小事件
+			inner.attr("transform", d3.event.transform);
+		});
+		svg.call(zoom);
+		render(d3.select("svg g"), g); // 渲染节点
+		let max = svg._groups[0][0].clientWidth>svg._groups[0][0].clientHeight?svg._groups[0][0].clientWidth:svg._groups[0][0].clientHeight;
+		var initialScale = max/779; // initialScale元素放大倍数，随着父元素宽高发生变化时改变初始渲染大小
+		var tWidth = (svg._groups[0][0].clientWidth  - g.graph().width * initialScale) / 2; // 水平居中
+		var tHeight = (svg._groups[0][0].clientHeight  - g.graph().height * initialScale) / 2; // 垂直居中
+		svg.call(zoom.transform, d3.zoomIdentity.translate(tWidth, tHeight).scale(initialScale)); // 元素水平垂直居中
+	}
+	</script>
+
+</body>
+</html>

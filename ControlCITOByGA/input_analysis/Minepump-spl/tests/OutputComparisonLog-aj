@@ -1,0 +1,14 @@
+package splat;
+
+
+public aspect OutputComparisonLog {
+	pointcut mcall() : execution(public * A.*.timeShift());
+
+	before() : mcall() {		
+//		System.out.println("calling: " + thisJoinPoint.getSignature());
+	}
+	
+	after() returning: mcall() {
+//		System.out.println("returning: " + thisJoinPoint.getSignature());
+	} 
+}
